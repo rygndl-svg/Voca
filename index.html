@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <link rel="manifest" href="data:application/manifest+json;utf8,{%22name%22:%22VocaMaster%20Pro%22,%22short_name%22:%22Voca%22,%22start_url%22:%22/Voca/%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%236c5ce7%22}">
+<script>
+  if ('serviceWorker' in navigator) {
+    const swCode = `self.addEventListener('fetch', function(e) {});`;
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob));
+  }
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VocaMaster Pro - 백업 & 스피드 영단어</title>
