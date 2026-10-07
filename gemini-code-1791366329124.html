@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocaMaster Pro - 백업 & 스피드 영단어</title>
+    <!-- 엑셀 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-hover: #5b4bc4;
+            --secondary: #a29bfe;
+            --accent: #00cec9;
+            --bg-grad: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            --card-bg: #ffffff;
+            --text-color: #2d3436;
+            --sub-text: #636e72;
+            --danger: #ff7675;
+            --success: #00b894;
+            --warning: #fdcb6e;
+        }
+
+        * { box-sizing: border-box; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; background: #f0f3f8; padding: 20px; color: var(--text-color); }
+        
+        .app-container { background: white; width: 100%; max-width: 540px; padding: 24px; border-radius: 24px; box-shadow: 0 15px 35px rgba(108, 92, 231, 0.12); }
+        
+        header { text-align: center; margin-bottom: 20px; position: relative; }
+        header h1 { font-size: 24px; font-weight: 800; background: var(--bg-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; }
+        .badge { display: inline-block; background: #f1f0fe; color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-top: 6px; }
+
+        /* 메인 네비게이션 */
+        nav { display: flex; gap: 6px; margin-bottom: 20px; background: #f1f3f8; padding: 6px; border-radius: 16px; }
+        .nav-btn { flex: 1; padding: 10px 4px; border: none; background: transparent; color: var(--sub-text); border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.25s ease; }
+        .nav-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* 카드 박스 */
+        .section-box { background: #fdfdfd; border: 1px solid #eef0f5; border-radius: 18px; padding: 18px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .section-title { font-weight: 700; font-size: 14px; color: #495057; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        
+        .btn-main { width: 100%; padding: 12px; border: none; background: var(--primary); color: white; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(108, 92, 231, 0.25); }
+        .btn-main:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-danger { background: var(--danger); box-shadow: 0 4px 12px rgba(255, 118, 117, 0.25); }
+        .btn-success { background: var(--success); box-shadow: 0 4px 12px rgba(0, 184, 148, 0.25); }
+        .btn-warning { background: var(--warning); color: #2d3436; box-shadow: 0 4px 12px rgba(253, 203, 110, 0.3); }
+
+        /* 빠른 학습 바로가기 버튼 액션 */
+        .quick-start-group { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-action-start { flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 13px; font-weight: 800; color: white; cursor: pointer; transition: 0.2s; text-align: center; }
+        .btn-card-start { background: linear-gradient(135deg, #6c5ce7, #8e44ad); box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
+        .btn-quiz-start { background: linear-gradient(135deg, #ff7675, #e17055); box-shadow: 0 4px 12px rgba(255, 118, 117, 0.3); }
+        .btn-action-start:hover { transform: translateY(-2px); opacity: 0.95; }
+
+        input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 12px 14px; border: 1px solid #e1e5ee; border-radius: 10px; margin-bottom: 8px; font-size: 14px; outline: none; background: white; transition: 0.2s; }
+        input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1); }
+        textarea { height: 90px; resize: vertical; }
+
+        /* Day 선택 탭 */
+        .mode-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+        .tab-btn { flex: 1; padding: 8px 4px; border: none; background: #eef0f5; color: var(--sub-text); border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .single-day-picker { display: flex; align-items: center; justify-content: space-between; background: white; padding: 6px 10px; border: 1px solid #e1e5ee; border-radius: 10px; }
+        .nav-arrow-btn { background: #f1f3f8; border: none; border-radius: 8px; padding: 6px 14px; font-weight: bold; cursor: pointer; color: var(--primary); }
+        
+        .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .btn-quick { padding: 9px 4px; font-size: 12px; border-radius: 8px; border: 1px solid #e1e5ee; background: white; font-weight: 700; cursor: pointer; color: var(--text-color); transition: 0.2s; }
+        .btn-quick:hover { background: #f1f0fe; color: var(--primary); border-color: var(--secondary); }
+
+        .day-checkbox-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 120px; overflow-y: auto; background: white; padding: 10px; border: 1px solid #e1e5ee; border-radius: 10px; user-select: none; }
+        .day-checkbox-label { display: flex; align-items: center; font-size: 12px; cursor: pointer; color: var(--text-color); padding: 2px; }
+        .day-checkbox-label input { margin-right: 4px; }
+
+        /* 단어 목록 리스트 */
+        .word-list-preview { max-height: 180px; overflow-y: auto; font-size: 13px; color: var(--text-color); background: white; padding: 10px; border: 1px solid #e1e5ee; border-radius: 10px; line-height: 1.6; }
+        .word-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f8; }
+        .word-tag { font-size: 10px; padding: 2px 6px; background: #f1f0fe; color: var(--primary); border-radius: 6px; margin-right: 6px; font-weight: 700; }
+        .word-tag-wrong { background: #ffeaa7; color: #d63031; }
+        .btn-mini { padding: 3px 8px; font-size: 11px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .btn-edit { background: var(--accent); }
+        .btn-del { background: var(--danger); }
+
+        /* 3D 플래시 카드 스타일 */
+        .flashcard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .card-progress-badge { font-size: 13px; font-weight: 700; color: var(--primary); background: #f1f0fe; padding: 4px 10px; border-radius: 10px; }
+        .flashcard-container { perspective: 1000px; height: 240px; margin-bottom: 16px; cursor: pointer; touch-action: pan-y; }
+        .flashcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); border-radius: 20px; }
+        .flashcard.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; border-radius: 20px; padding: 20px; text-align: center; border: 2px solid #f1f0fe; box-shadow: 0 10px 25px rgba(108, 92, 231, 0.08); }
+        .card-back { transform: rotateY(180deg); background: #fafafd; }
+        .word-title { font-size: 2.2rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+        .meaning-title { font-size: 1.8rem; font-weight: 800; color: var(--text-color); }
+        
+        .shortcut-guide { font-size: 11px; color: var(--sub-text); text-align: center; margin-top: 12px; background: #f8f9fa; padding: 8px; border-radius: 8px; }
+
+        /* 스피드 퀴즈 타이머 및 컨트롤 스타일 */
+        .quiz-setting-group { margin-bottom: 16px; text-align: left; }
+        .quiz-setting-group label { font-size: 13px; font-weight: bold; color: var(--sub-text); margin-bottom: 4px; display: block; }
+        .timer-bar-bg { width: 100%; height: 8px; background: #eef0f5; border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
+        .timer-bar { width: 100%; height: 100%; background: var(--danger); transition: width 0.05s linear; }
+        .options { display: grid; gap: 10px; margin-top: 15px; }
+        .btn-option { padding: 14px; border: 2px solid #e1e5ee; background: white; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; color: var(--text-color); }
+        .btn-option:hover { background: #f1f0fe; border-color: var(--primary); color: var(--primary); }
+
+        /* 퀴즈 컨트롤 버튼 */
+        .quiz-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+        .btn-quiz-ctrl { flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+
+        .hidden { display: none !important; }
+        .toggle-label { display: flex; align-items: center; font-size: 13px; font-weight: bold; color: var(--text-color); cursor: pointer; }
+        .toggle-label input { margin-right: 8px; width: 16px; height: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>VocaMaster Pro</h1>
+        <div><span id="total-count-badge" class="badge">총 0개 선택됨</span></div>
+    </header>
+
+    <nav>
+        <button id="nav-btn-setup" class="nav-btn active" onclick="switchNav('setup')">단어장 설정</button>
+        <button id="nav-btn-cards" class="nav-btn" onclick="switchNav('cards')">카드 학습</button>
+        <button id="nav-btn-quiz" class="nav-btn" onclick="switchNav('quiz')">스피드 퀴즈</button>
+        <button id="nav-btn-bulk" class="nav-btn" onclick="switchNav('bulk')">대량 추가</button>
+    </nav>
+
+    <!-- 1. 단어장 설정 탭 -->
+    <section id="tab-setup" class="tab-content active">
+        <!-- 파일 내보내기 / 불러오기 상자 -->
+        <div class="section-box" style="background: #f8f7ff; border-color: #e2deff;">
+            <div class="section-title" style="color: var(--primary);">
+                💾 단어장 데이터 파일 백업 & 불러오기
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                <button class="btn-main" style="flex:1; background: var(--primary);" onclick="exportDataToFile()">📤 단어장 파일 내보내기</button>
+                <button class="btn-main" style="flex:1; background: #00b894;" onclick="document.getElementById('import-file-input').click()">📥 단어장 파일 불러오기</button>
+                <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importDataFromFile(this)">
+            </div>
+        </div>
+
+        <!-- 틀린 단어장 전용 관리 박스 -->
+        <div class="section-box" style="background: #fff5f5; border-color: #ffcdd2;">
+            <div class="section-title" style="color: var(--danger);">
+                🔥 틀린 단어장 전용 관리 (Day 51)
+                <span id="wrong-day-count" style="font-size:12px; font-weight:bold; color:var(--danger);">0개</span>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:6px;">
+                <button class="btn-main btn-danger" style="flex:1; padding:10px; font-size:12px;" onclick="selectAndManageWrongDay()">🔥 틀린 단어만 선택/보기</button>
+                <button class="btn-main" style="flex:1; padding:10px; font-size:12px; background:#e17055;" onclick="clearWrongDayOnly()">🧹 틀린 단어장 전체 비우기</button>
+            </div>
+        </div>
+
+        <!-- Day 범위를 선택하는 영역 -->
+        <div class="section-box">
+            <div class="section-title">1. 학습할 Day 범위 선택</div>
+            <div class="mode-tabs">
+                <button class="tab-btn active" id="tab-single" onclick="switchTab('single')">단일 Day</button>
+                <button class="tab-btn" id="tab-quick" onclick="switchTab('quick')">원클릭 범위</button>
+                <button class="tab-btn" id="tab-custom" onclick="switchTab('custom')">자유 선택</button>
+            </div>
+
+            <div id="panel-single">
+                <div class="single-day-picker" onwheel="handleWheelSingleDay(event)">
+                    <button class="nav-arrow-btn" onclick="moveSingleDay(-1)">&lt;</button>
+                    <select id="single-day-select" style="margin-bottom:0; width:60%; font-weight:bold; text-align:center;" onchange="applySingleDaySelect()"></select>
+                    <button class="nav-arrow-btn" onclick="moveSingleDay(1)">&gt;</button>
+                </div>
+            </div>
+
+            <div id="panel-quick" class="quick-grid hidden">
+                <button class="btn-quick" onclick="selectRangePreset(1, 10)">Day 1 ~ 10</button>
+                <button class="btn-quick" onclick="selectRangePreset(11, 20)">Day 11 ~ 20</button>
+                <button class="btn-quick" onclick="selectRangePreset(21, 30)">Day 21 ~ 30</button>
+                <button class="btn-quick" onclick="selectRangePreset(31, 40)">Day 31 ~ 40</button>
+                <button class="btn-quick" onclick="selectRangePreset(41, 50)">Day 41 ~ 50</button>
+                <button class="btn-quick" style="background: var(--primary); color: white;" onclick="selectRangePreset(1, 50)">전체 Day (1~50)</button>
+                <button class="btn-quick" style="grid-column: span 3; background: var(--danger); color: white;" onclick="selectWrongDayOnly()">🔥 틀린 단어장만 선택</button>
+            </div>
+
+            <div id="panel-custom" class="hidden">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="font-size:11px; color:var(--sub-text);">💡 드래그 다중 선택 가능</span>
+                    <div>
+                        <button class="btn-mini" style="background:var(--primary);" onclick="toggleSelectAllDays(true)">전체선택</button>
+                        <button class="btn-mini" style="background:#b2bec3;" onclick="toggleSelectAllDays(false)">해제</button>
+                    </div>
+                </div>
+                <div id="day-checkbox-container" class="day-checkbox-grid"></div>
+            </div>
+
+            <!-- 학습/퀴즈 바로가기 버튼 영역 -->
+            <div class="quick-start-group">
+                <button class="btn-action-start btn-card-start" onclick="goToCardStudy()">🎴 선택 범위 카드 학습</button>
+                <button class="btn-action-start btn-quiz-start" onclick="goToSpeedQuiz()">⚡ 선택 범위 스피드 퀴즈</button>
+            </div>
+        </div>
+
+        <!-- 단어를 직접 추가하거나 등록할 대상 Day -->
+        <div class="section-box">
+            <div class="section-title">2. 단어 편집 대상 Day</div>
+            <div class="single-day-picker" style="margin-bottom: 10px; background: #f8f7ff; border-color: #e2deff;" onwheel="handleWheelEditDay(event)">
+                <button class="nav-arrow-btn" onclick="moveEditDay(-1)">&lt;</button>
+                <select id="edit-day-select" style="margin-bottom:0; width:65%; font-weight:bold; text-align:center; color:var(--primary);" onchange="updateCombinedWordList()"></select>
+                <button class="nav-arrow-btn" onclick="moveEditDay(1)">&gt;</button>
+            </div>
+            
+            <div style="display: flex; gap: 6px;">
+                <input type="text" id="input-word" placeholder="영단어" style="margin-bottom:0;">
+                <input type="text" id="input-meaning" placeholder="뜻" style="margin-bottom:0;">
+            </div>
+            <button class="btn-main" style="padding:10px; font-size:13px; margin-top:8px;" onclick="addWordManual()">선택한 Day에 단어 추가</button>
+        </div>
+
+        <!-- 단어 목록 미리보기 -->
+        <div class="section-box">
+            <div class="section-title">
+                <span id="word-count-label">선택한 단어 수 (0개)</span>
+                <button class="btn-mini btn-del" style="padding:4px 8px; font-size:11px;" onclick="clearSelectedDays()">선택 Day 초기화</button>
+            </div>
+            <div id="word-preview" class="word-list-preview">선택된 단어가 없습니다.</div>
+        </div>
+    </section>
+
+    <!-- 2. 플래시카드 학습 탭 -->
+    <section id="tab-cards" class="tab-content">
+        <div class="flashcard-header">
+            <span id="card-progress" class="card-progress-badge">카드 0 / 0</span>
+            <button class="btn-mini" style="background:var(--primary); padding:6px 12px; border-radius:8px;" onclick="shuffleCards()">🔀 단어 섞기</button>
+        </div>
+
+        <div class="flashcard-container" id="card-container" onclick="flipCard()">
+            <div class="flashcard" id="main-card">
+                <div class="card-front">
+                    <div class="word-title" id="card-word">apple</div>
+                    <p style="color: var(--sub-text); font-size: 0.85rem;">터치하여 뜻 보기</p>
+                </div>
+                <div class="card-back">
+                    <div class="meaning-title" id="card-meaning">사과</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            <button class="btn-main btn-danger" onclick="markCard(false)">🔥 다시 보기 (틀림)</button>
+            <button class="btn-main btn-success" onclick="markCard(true)">✅ 완전 암기 (맞음)</button>
+            <button class="btn-main btn-warning" onclick="skipCard()">➡️ 그냥 넘기기</button>
+            <button class="btn-main" style="background:var(--accent);" onclick="speakCurrentCardSide()">🔊 다시 듣기</button>
+        </div>
+
+        <div class="shortcut-guide">
+            ⌨️ <b>단축키 안내</b>: [스페이스바] 뒤집기 | [←] 다시보기 | [→] 완전암기 | [↓] 넘기기
+        </div>
+    </section>
+
+    <!-- 3. 스피드 퀴즈 탭 -->
+    <section id="tab-quiz" class="tab-content">
+        <div id="quiz-intro">
+            <div style="text-align:center; padding: 10px 0;">
+                <h2 style="margin-bottom:15px; color:var(--primary);">⚡ 스피드 타임어택 퀴즈</h2>
+                
+                <div class="quiz-setting-group">
+                    <label for="quiz-mode-select">퀴즈 모드 선택</label>
+                    <select id="quiz-mode-select">
+                        <option value="engToKor">영어 단어 보고 ➔ 한글 뜻 맞추기</option>
+                        <option value="korToEng">한글 뜻 보고 ➔ 영어 단어 맞추기</option>
+                    </select>
+                </div>
+
+                <div class="quiz-setting-group">
+                    <label for="quiz-time-select">제한 시간 선택</label>
+                    <select id="quiz-time-select">
+                        <option value="3000">3초 (기본 난이도)</option>
+                        <option value="2000">2초 (숙련자 모드)</option>
+                        <option value="1000">1초 (반사신경 챌린지)</option>
+                    </select>
+                </div>
+
+                <div class="quiz-setting-group" style="background:#f8f7ff; padding:12px; border-radius:10px; border:1px solid #e2deff;">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="quiz-audio-toggle" checked>
+                        <span>🔊 퀴즈 정/오답 시 영어 발음 재생하기</span>
+                    </label>
+                </div>
+
+                <p style="color:var(--sub-text); margin-bottom:20px; font-size:13px;">
+                    시간 초과나 오답 발생 시 해당 단어는 자동으로 <b>틀린 단어장(Day 51)</b>에 저장됩니다.
+                </p>
+                <button class="btn-main" style="max-width:240px;" onclick="startQuiz('normal')">퀴즈 시작하기</button>
+            </div>
+        </div>
+
+        <div id="quiz-game" class="hidden">
+            <div class="quiz-controls">
+                <button id="btn-pause-quiz" class="btn-quiz-ctrl btn-warning" onclick="togglePauseQuiz()">⏸️ 일시정지</button>
+                <button class="btn-quiz-ctrl btn-danger" onclick="stopQuiz()">❌ 퀴즈 중단</button>
+            </div>
+
+            <div class="timer-bar-bg"><div id="timer-bar" class="timer-bar"></div></div>
+            <div style="display: flex; justify-content: center; font-weight: bold; margin-bottom: 10px; font-size: 15px;">
+                <span id="question-count" style="color: var(--primary);">문제 1 / 10</span>
+            </div>
+            <div id="feedback-msg" style="text-align: center; font-weight: bold; min-height: 24px; margin-bottom: 8px;"></div>
+            <div id="word-display" style="font-size: 32px; font-weight: 800; text-align: center; margin: 15px 0; color: var(--text-color); word-break: keep-all;">Word</div>
+            <div id="options-container" class="options"></div>
+        </div>
+
+        <div id="quiz-result" class="hidden" style="text-align:center; padding: 20px 0;">
+            <h2 style="font-size:26px; margin-bottom:10px; color:var(--primary);">🎉 퀴즈 종료!</h2>
+            <div id="final-correct-count" style="font-size:32px; font-weight:bold; color:var(--text-color); margin-bottom:10px;">0 / 0개 정답</div>
+            <div id="wrong-count-text" style="color:var(--danger); font-weight:bold; margin-bottom:20px;">틀린 문제: 0개</div>
+            <button id="btn-review-wrong" class="btn-main btn-danger" style="margin-bottom:8px;" onclick="startQuiz('wrong')">🔥 틀린 문제 복습하기</button>
+            <button class="btn-main" style="background:#b2bec3;" onclick="resetQuizToIntro()">퀴즈 메인으로</button>
+        </div>
+    </section>
+
+    <!-- 4. 대량 추가 탭 -->
+    <section id="tab-bulk" class="tab-content">
+        <div class="section-box">
+            <div class="section-title">📋 텍스트 복사 / 붙여넣기 대량 추가</div>
+            <p style="font-size: 11px; color: var(--sub-text); margin-bottom: 6px;"><code>영단어 - 뜻</code> 또는 <code>영단어 : 뜻</code> 형식으로 여러 줄을 붙여넣으세요.</p>
+            <textarea id="bulk-text" placeholder="apple - 사과&#10;banana : 바나나&#10;computer - 컴퓨터"></textarea>
+            <button class="btn-main" onclick="addBulkText()">선택한 Day에 텍스트 추가</button>
+        </div>
+
+        <div class="section-box">
+            <div class="section-title">📂 엑셀 / CSV 파일 업로드</div>
+            <input type="file" id="excel-file" accept=".xlsx, .xls, .csv, .txt" onchange="loadExcelFile(this)">
+            <p style="font-size: 11px; color: var(--sub-text); margin-top: 4px;">A열: 번호(선택), B열: 영단어, C열: 뜻 (또는 A열: 단어, B열: 뜻) 구조 모두 자동 지원</p>
+        </div>
+    </section>
+</div>
+
+<script>
+    const STORAGE_KEY = 'VOCAB_MASTER_DATA';
+    const WRONG_DAY_KEY = 'Day 51 (틀린 단어장)';
+    
+    let allDaysData = {};
+    let combinedWordList = [];
+    let cardIndex = 0;
+    
+    /* 퀴즈 변수 */
+    let quizWordList = [];
+    let wrongWordsList = [];
+    let currentIdx = 0, correctCount = 0, timer = null, isAnswering = false;
+    let selectedTimeLimit = 3000;
+    let selectedQuizMode = 'engToKor';
+    let isQuizAudioEnabled = true;
+
+    let isPaused = false;
+    let timeRemaining = 3000;
+    let lastTimerTick = 0;
+
+    let isMouseDown = false;
+    let dragTargetState = true;
+
+    /* 스와이프 제스처 관련 변수 */
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    window.onload = function() {
+        loadData();
+        initDayCheckboxes();
+        initDropdowns();
+        switchTab('single');
+
+        document.addEventListener('mouseup', () => { isMouseDown = false; });
+        initKeyboardShortcuts();
+        initTouchGestures();
+    };
+
+    /* ⌨️ 키보드 단축키 설정 */
+    function initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            const isCardTabActive = document.getElementById('tab-cards').classList.contains('active');
+            if (!isCardTabActive) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                flipCard();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                markCard(false);
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                markCard(true);
+            } else if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                skipCard();
+            }
+        });
+    }
+
+    /* 📱 모바일 스와이프 제스처 설정 */
+    function initTouchGestures() {
+        const container = document.getElementById('card-container');
+        if (!container) return;
+
+        container.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        container.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
+        }, false);
+    }
+
+    function handleSwipe(startX, startY, endX, endY) {
+        const diffX = endX - startX;
+        const diffY = endY - startY;
+        const threshold = 50; // 스와이프 인식 최소 거리(px)
+
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            // 좌우 스와이프
+            if (Math.abs(diffX) > threshold) {
+                if (diffX < 0) {
+                    markCard(false); // 왼쪽 스와이프 -> 다시 보기
+                } else {
+                    markCard(true);  // 오른쪽 스와이프 -> 완전 암기
+                }
+            }
+        } else {
+            // 상하 스와이프
+            if (Math.abs(diffY) > threshold) {
+                if (diffY > 0) {
+                    skipCard(); // 아래로 스와이프 -> 그냥 넘기기
+                }
+            }
+        }
+    }
+
+    /* 클릭 즉시 데이터 .json 파일 다운로드 */
+    function exportDataToFile() {
+        if (Object.keys(allDaysData).length === 0) {
+            alert('내보낼 단어장이 비어 있습니다.');
+            return;
+        }
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allDaysData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `vocamaster_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    /* .json 파일 선택해서 불러오기 */
+    function importDataFromFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (typeof importedData === 'object' && importedData !== null) {
+                    allDaysData = importedData;
+                    saveData();
+                    updateCombinedWordList();
+                    alert('단어장 데이터를 성공적으로 불러왔습니다!');
+                } else {
+                    alert('올바르지 않은 단어장 파일 형식입니다.');
+                }
+            } catch (err) {
+                alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+            }
+            input.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        try { allDaysData = stored ? JSON.parse(stored) : {}; } catch(e) { allDaysData = {}; }
+    }
+
+    function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(allDaysData));
+    }
+
+    function switchNav(navName) {
+        window.speechSynthesis.cancel();
+        clearInterval(timer);
+
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('nav .nav-btn').forEach(el => el.classList.remove('active'));
+
+        document.getElementById(`tab-${navName}`).classList.add('active');
+        const activeNavBtn = document.getElementById(`nav-btn-${navName}`);
+        if (activeNavBtn) activeNavBtn.classList.add('active');
+
+        if (navName === 'cards') renderCard();
+    }
+
+    function goToCardStudy() {
+        if (combinedWordList.length === 0) {
+            alert('학습할 단어가 없습니다. Day 범위를 선택하거나 단어를 먼저 등록해주세요!');
+            return;
+        }
+        cardIndex = 0;
+        switchNav('cards');
+    }
+
+    function goToSpeedQuiz() {
+        if (combinedWordList.length === 0) {
+            alert('퀴즈를 진행할 단어가 없습니다. Day 범위를 선택하거나 단어를 먼저 등록해주세요!');
+            return;
+        }
+        switchNav('quiz');
+        resetQuizToIntro();
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.mode-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+
+        document.getElementById('panel-single').classList.add('hidden');
+        document.getElementById('panel-quick').classList.add('hidden');
+        document.getElementById('panel-custom').classList.add('hidden');
+
+        document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+
+        if (tabName === 'single') applySingleDaySelect();
+    }
+
+    function initDayCheckboxes() {
+        const container = document.getElementById('day-checkbox-container');
+        container.innerHTML = '';
+
+        for (let i = 1; i <= 50; i++) {
+            const dayKey = `Day ${i}`;
+            const label = document.createElement('label');
+            label.className = 'day-checkbox-label';
+            label.innerHTML = `<input type="checkbox" value="${dayKey}" id="cb-day-${i}"> ${dayKey}`;
+            attachDragEvents(label);
+            container.appendChild(label);
+        }
+
+        const wrongLabel = document.createElement('label');
+        wrongLabel.className = 'day-checkbox-label';
+        wrongLabel.style.color = 'var(--danger)';
+        wrongLabel.style.fontWeight = 'bold';
+        wrongLabel.innerHTML = `<input type="checkbox" value="${WRONG_DAY_KEY}" id="cb-day-wrong"> 틀린단어`;
+        attachDragEvents(wrongLabel);
+        container.appendChild(wrongLabel);
+    }
+
+    function attachDragEvents(label) {
+        label.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            const cb = label.querySelector('input[type="checkbox"]');
+            cb.checked = !cb.checked;
+            dragTargetState = cb.checked;
+            updateCombinedWordList();
+            e.preventDefault();
+        });
+
+        label.addEventListener('mouseenter', () => {
+            if (isMouseDown) {
+                const cb = label.querySelector('input[type="checkbox"]');
+                if (cb.checked !== dragTargetState) {
+                    cb.checked = dragTargetState;
+                    updateCombinedWordList();
+                }
+            }
+        });
+    }
+
+    function initDropdowns() {
+        const singleSelect = document.getElementById('single-day-select');
+        const editSelect = document.getElementById('edit-day-select');
+        singleSelect.innerHTML = ''; editSelect.innerHTML = '';
+
+        for (let i = 1; i <= 50; i++) {
+            singleSelect.innerHTML += `<option value="Day ${i}">Day ${i}</option>`;
+            editSelect.innerHTML += `<option value="Day ${i}">Day ${i}</option>`;
+        }
+        singleSelect.innerHTML += `<option value="${WRONG_DAY_KEY}">🔥 ${WRONG_DAY_KEY}</option>`;
+        editSelect.innerHTML += `<option value="${WRONG_DAY_KEY}">🔥 ${WRONG_DAY_KEY}</option>`;
+    }
+
+    function applySingleDaySelect() {
+        const selectedVal = document.getElementById('single-day-select').value;
+        document.getElementById('edit-day-select').value = selectedVal;
+        setCheckboxesByCondition(key => key === selectedVal);
+    }
+
+    function moveSingleDay(delta) {
+        const select = document.getElementById('single-day-select');
+        let newIdx = select.selectedIndex + delta;
+        if (newIdx >= 0 && newIdx < select.options.length) {
+            select.selectedIndex = newIdx;
+            applySingleDaySelect();
+        }
+    }
+
+    function moveEditDay(delta) {
+        const select = document.getElementById('edit-day-select');
+        let newIdx = select.selectedIndex + delta;
+        if (newIdx >= 0 && newIdx < select.options.length) {
+            select.selectedIndex = newIdx;
+            updateCombinedWordList();
+        }
+    }
+
+    function handleWheelSingleDay(e) { e.preventDefault(); moveSingleDay(e.deltaY > 0 ? 1 : -1); }
+    function handleWheelEditDay(e) { e.preventDefault(); moveEditDay(e.deltaY > 0 ? 1 : -1); }
+
+    function selectRangePreset(start, end) {
+        document.getElementById('edit-day-select').value = `Day ${start}`;
+        setCheckboxesByCondition((key, idx) => idx >= start && idx <= end);
+    }
+
+    function selectWrongDayOnly() {
+        document.getElementById('edit-day-select').value = WRONG_DAY_KEY;
+        setCheckboxesByCondition(key => key === WRONG_DAY_KEY);
+    }
+
+    function selectAndManageWrongDay() {
+        switchTab('single');
+        document.getElementById('single-day-select').value = WRONG_DAY_KEY;
+        applySingleDaySelect();
+    }
+
+    function clearWrongDayOnly() {
+        const count = (allDaysData[WRONG_DAY_KEY] || []).length;
+        if (count === 0) return alert('틀린 단어장이 이미 비어있습니다.');
+
+        if (confirm(`틀린 단어장(${count}개)의 모든 단어를 삭제하시겠습니까?`)) {
+            delete allDaysData[WRONG_DAY_KEY];
+            saveData();
+            updateCombinedWordList();
+            alert('틀린 단어장이 초기화되었습니다.');
+        }
+    }
+
+    function toggleSelectAllDays(selectAll) {
+        setCheckboxesByCondition(() => selectAll);
+    }
+
+    function setCheckboxesByCondition(conditionFunc) {
+        for (let i = 1; i <= 50; i++) {
+            const cb = document.getElementById(`cb-day-${i}`);
+            if (cb) cb.checked = conditionFunc(`Day ${i}`, i);
+        }
+        const wrongCb = document.getElementById('cb-day-wrong');
+        if (wrongCb) wrongCb.checked = conditionFunc(WRONG_DAY_KEY, 51);
+
+        updateCombinedWordList();
+    }
+
+    function getSelectedDayKeys() {
+        const checkboxes = document.querySelectorAll('#day-checkbox-container input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function updateCombinedWordList() {
+        const selectedKeys = getSelectedDayKeys();
+        combinedWordList = [];
+
+        selectedKeys.forEach(dayKey => {
+            const list = allDaysData[dayKey] || [];
+            list.forEach((item, index) => {
+                combinedWordList.push({ ...item, dayKey, originalIndex: index });
+            });
+        });
+
+        const wrongCount = (allDaysData[WRONG_DAY_KEY] || []).length;
+        const wrongBadge = document.getElementById('wrong-day-count');
+        if (wrongBadge) wrongBadge.innerText = `${wrongCount}개`;
+
+        document.getElementById('total-count-badge').innerText = `총 ${combinedWordList.length}개 선택됨`;
+        updatePreview();
+    }
+
+    function cleanValue(str) {
+        return str ? String(str).trim() : '';
+    }
+
+    function addWordManual() {
+        const targetDay = document.getElementById('edit-day-select').value;
+        const word = cleanValue(document.getElementById('input-word').value);
+        const meaning = cleanValue(document.getElementById('input-meaning').value);
+
+        if (!word || !meaning) return alert('영단어와 뜻을 모두 입력해주세요.');
+
+        if (!allDaysData[targetDay]) allDaysData[targetDay] = [];
+        allDaysData[targetDay].push({ word, answer: meaning });
+        
+        saveData();
+        updateCombinedWordList();
+        document.getElementById('input-word').value = '';
+        document.getElementById('input-meaning').value = '';
+    }
+
+    function addBulkText() {
+        const targetDay = document.getElementById('edit-day-select').value;
+        const text = document.getElementById('bulk-text').value.trim();
+        if (!text) return;
+
+        const lines = text.split('\n');
+        let addedCount = 0;
+        if (!allDaysData[targetDay]) allDaysData[targetDay] = [];
+
+        lines.forEach(line => {
+            const parts = line.split(/[-:]/);
+            if (parts.length >= 2) {
+                const word = cleanValue(parts[0]);
+                const answer = cleanValue(parts[1]);
+                if (word && answer) {
+                    allDaysData[targetDay].push({ word, answer });
+                    addedCount++;
+                }
+            }
+        });
+
+        saveData();
+        updateCombinedWordList();
+        document.getElementById('bulk-text').value = '';
+        alert(`[${targetDay}]에 ${addedCount}개 단어가 추가되었습니다!`);
+    }
+
+    function loadExcelFile(input) {
+        const targetDay = document.getElementById('edit-day-select').value;
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                let addedCount = 0;
+                if (!allDaysData[targetDay]) allDaysData[targetDay] = [];
+
+                rows.forEach((row) => {
+                    if (!row || row.length === 0) return;
+                    
+                    const validCells = row.map(c => String(c).trim()).filter(c => c !== '');
+                    if (validCells.length < 2) return;
+
+                    if (validCells.some(cell => ['no', 'word', 'meaning', '단어', '뜻'].includes(cell.toLowerCase()))) {
+                        return;
+                    }
+
+                    let word = '', answer = '';
+
+                    if (validCells.length >= 3 && !isNaN(validCells[0])) {
+                        word = validCells[1];
+                        answer = validCells[2];
+                    } else {
+                        word = validCells[0];
+                        answer = validCells[1];
+                    }
+
+                    if (word && answer) {
+                        allDaysData[targetDay].push({ word, answer });
+                        addedCount++;
+                    }
+                });
+
+                saveData();
+                alert(`[${targetDay}]에 ${addedCount}개 단어가 성공적으로 추가되었습니다!`);
+                updateCombinedWordList();
+                input.value = '';
+            } catch (err) {
+                alert('파일 읽기 실패: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function updatePreview() {
+        const preview = document.getElementById('word-preview');
+        document.getElementById('word-count-label').innerText = `선택한 단어 수 (${combinedWordList.length}개)`;
+
+        if (combinedWordList.length === 0) {
+            preview.innerText = '선택된 Day가 없거나 등록된 단어가 없습니다.';
+            return;
+        }
+
+        preview.innerHTML = combinedWordList.map((item) => {
+            const isWrong = item.dayKey === WRONG_DAY_KEY;
+            return `
+            <div class="word-item">
+                <div>
+                    <span class="word-tag ${isWrong ? 'word-tag-wrong' : ''}">${item.dayKey}</span>
+                    <b>${item.word}</b> : ${item.answer}
+                </div>
+                <div>
+                    <button class="btn-mini btn-edit" onclick="editWord('${item.dayKey}', ${item.originalIndex})">수정</button>
+                    <button class="btn-mini btn-del" onclick="deleteWord('${item.dayKey}', ${item.originalIndex})">삭제</button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    function editWord(dayKey, origIdx) {
+        const currentItem = allDaysData[dayKey][origIdx];
+        const newWord = prompt('영단어를 수정하세요:', currentItem.word);
+        if (newWord === null) return;
+        const newMeaning = prompt('뜻을 수정하세요:', currentItem.answer);
+        if (newMeaning === null) return;
+
+        allDaysData[dayKey][origIdx] = { word: cleanValue(newWord), answer: cleanValue(newMeaning) };
+        saveData();
+        updateCombinedWordList();
+    }
+
+    function deleteWord(dayKey, origIdx) {
+        if (confirm(`'${allDaysData[dayKey][origIdx].word}' 단어를 삭제하시겠습니까?`)) {
+            allDaysData[dayKey].splice(origIdx, 1);
+            saveData();
+            updateCombinedWordList();
+        }
+    }
+
+    function clearSelectedDays() {
+        const selectedKeys = getSelectedDayKeys();
+        if (selectedKeys.length === 0) return alert('선택된 Day가 없습니다.');
+
+        if (confirm(`선택한 [${selectedKeys.join(', ')}]의 모든 단어를 삭제하시겠습니까?`)) {
+            selectedKeys.forEach(key => delete allDaysData[key]);
+            saveData();
+            updateCombinedWordList();
+        }
+    }
+
+    function cleanMeaningForTTS(text) {
+        if (!text) return '';
+        return text
+            .replace(/\b(v|a|n|ad|vt|vi|prep|conj|pron|num|int|art)\./gi, '')
+            .replace(/\([^)]*\)/g, '')
+            .trim();
+    }
+
+    function speakText(text, lang) {
+        window.speechSynthesis.cancel();
+        let targetText = text;
+        if (lang === 'ko-KR') targetText = cleanMeaningForTTS(text);
+        if (!targetText) return;
+
+        const utterance = new SpeechSynthesisUtterance(targetText);
+        utterance.lang = lang;
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    /* 📊 카드 학습 상태 및 단어 렌더링 */
+    function renderCard() {
+        const progressBadge = document.getElementById('card-progress');
+
+        if (combinedWordList.length === 0) {
+            document.getElementById('card-word').innerText = '단어 없음';
+            document.getElementById('card-meaning').innerText = '단어를 선택해주세요';
+            if (progressBadge) progressBadge.innerText = '카드 0 / 0';
+            return;
+        }
+
+        const currNum = (cardIndex % combinedWordList.length) + 1;
+        if (progressBadge) progressBadge.innerText = `카드 ${currNum} / ${combinedWordList.length}`;
+
+        const current = combinedWordList[cardIndex % combinedWordList.length];
+        document.getElementById('card-word').innerText = current.word;
+        document.getElementById('card-meaning').innerText = current.answer;
+        
+        const mainCard = document.getElementById('main-card');
+        mainCard.classList.remove('flipped');
+        speakText(current.word, 'en-US');
+    }
+
+    /* 🔀 카드 학습 순서 섞기 */
+    function shuffleCards() {
+        if (combinedWordList.length <= 1) return alert('섞을 단어가 충분하지 않습니다.');
+        combinedWordList = shuffle(combinedWordList);
+        cardIndex = 0;
+        renderCard();
+    }
+
+    function flipCard() { 
+        const mainCard = document.getElementById('main-card');
+        mainCard.classList.toggle('flipped');
+        
+        if (combinedWordList.length === 0) return;
+        const current = combinedWordList[cardIndex % combinedWordList.length];
+
+        if (mainCard.classList.contains('flipped')) {
+            speakText(current.answer, 'ko-KR');
+        } else {
+            speakText(current.word, 'en-US');
+        }
+    }
+
+    function speakCurrentCardSide() {
+        if (combinedWordList.length === 0) return;
+        const current = combinedWordList[cardIndex % combinedWordList.length];
+        const isFlipped = document.getElementById('main-card').classList.contains('flipped');
+        
+        if (isFlipped) {
+            speakText(current.answer, 'ko-KR');
+        } else {
+            speakText(current.word, 'en-US');
+        }
+    }
+
+    function markCard(isMemorized) {
+        if (combinedWordList.length === 0) return;
+        
+        const currentItem = combinedWordList[cardIndex % combinedWordList.length];
+
+        if (!isMemorized) {
+            if (!allDaysData[WRONG_DAY_KEY]) allDaysData[WRONG_DAY_KEY] = [];
+            const exists = allDaysData[WRONG_DAY_KEY].some(item => item.word === currentItem.word);
+            if (!exists) {
+                allDaysData[WRONG_DAY_KEY].push({ word: currentItem.word, answer: currentItem.answer });
+                saveData();
+                updateCombinedWordList();
+            }
+        }
+
+        cardIndex = (cardIndex + 1) % combinedWordList.length;
+        renderCard();
+    }
+
+    function skipCard() {
+        if (combinedWordList.length === 0) return;
+        cardIndex = (cardIndex + 1) % combinedWordList.length;
+        renderCard();
+    }
+
+    function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+    function getSimilarityDistance(a, b) {
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+                }
+            }
+        }
+        return matrix[b.length][a.length];
+    }
+
+    function startQuiz(mode = 'normal') {
+        selectedTimeLimit = parseInt(document.getElementById('quiz-time-select').value);
+        selectedQuizMode = document.getElementById('quiz-mode-select').value;
+        isQuizAudioEnabled = document.getElementById('quiz-audio-toggle').checked;
+
+        if (mode === 'normal') {
+            if (combinedWordList.length === 0) return alert('퀴즈를 진행할 단어를 하나 이상 선택해주세요.');
+            quizWordList = shuffle(combinedWordList);
+            wrongWordsList = [];
+        } else {
+            if (wrongWordsList.length === 0) return alert('복습할 틀린 문제가 없습니다.');
+            quizWordList = shuffle(wrongWordsList);
+            wrongWordsList = [];
+        }
+
+        currentIdx = 0; correctCount = 0; isPaused = false;
+        resetPauseButtonUI();
+
+        document.getElementById('quiz-intro').classList.add('hidden');
+        document.getElementById('quiz-result').classList.add('hidden');
+        document.getElementById('quiz-game').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if (currentIdx >= quizWordList.length) { endQuiz(); return; }
+
+        isAnswering = false;
+        isPaused = false;
+        resetPauseButtonUI();
+
+        const msg = document.getElementById('feedback-msg');
+        msg.innerText = '';
+
+        const currentData = quizWordList[currentIdx];
+        const isEngToKor = (selectedQuizMode === 'engToKor');
+
+        document.getElementById('question-count').innerText = `문제 ${currentIdx + 1} / ${quizWordList.length}`;
+        document.getElementById('word-display').innerText = isEngToKor ? currentData.word : currentData.answer;
+
+        if (isQuizAudioEnabled) speakText(currentData.word, 'en-US');
+
+        const correctAnswer = isEngToKor ? currentData.answer : currentData.word;
+
+        let otherItems = combinedWordList.filter(item => {
+            const target = isEngToKor ? item.answer : item.word;
+            return target !== correctAnswer;
+        });
+
+        otherItems.sort((a, b) => {
+            const valA = isEngToKor ? a.answer : a.word;
+            const valB = isEngToKor ? b.answer : b.word;
+            return getSimilarityDistance(correctAnswer, valA) - getSimilarityDistance(correctAnswer, valB);
+        });
+
+        let distractors = [];
+        const seen = new Set([correctAnswer]);
+        
+        for (let item of otherItems) {
+            const val = isEngToKor ? item.answer : item.word;
+            if (!seen.has(val)) {
+                seen.add(val);
+                distractors.push(val);
+            }
+            if (distractors.length >= 3) break;
+        }
+
+        while (distractors.length < 3) {
+            distractors.push(isEngToKor ? `보기 ${distractors.length + 1}` : `Option ${distractors.length + 1}`);
+        }
+
+        const options = shuffle([correctAnswer, ...distractors.slice(0, 3)]);
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt, correctAnswer);
+            container.appendChild(btn);
+        });
+
+        timeRemaining = selectedTimeLimit;
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        lastTimerTick = Date.now();
+
+        timer = setInterval(() => {
+            if (isPaused || isAnswering) return;
+
+            const now = Date.now();
+            const delta = now - lastTimerTick;
+            lastTimerTick = now;
+
+            timeRemaining -= delta;
+            const remainingPct = Math.max(0, (timeRemaining / selectedTimeLimit) * 100);
+            document.getElementById('timer-bar').style.width = `${remainingPct}%`;
+
+            if (timeRemaining <= 0) {
+                clearInterval(timer);
+                if (!isAnswering) handleTimeOut();
+            }
+        }, 30);
+    }
+
+    function togglePauseQuiz() {
+        if (isAnswering) return;
+
+        isPaused = !isPaused;
+        const btn = document.getElementById('btn-pause-quiz');
+        const msg = document.getElementById('feedback-msg');
+
+        if (isPaused) {
+            btn.innerText = '▶ 계속하기';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = 'white';
+            msg.innerText = '⏸️ 퀴즈 일시정지됨';
+            msg.style.color = 'var(--sub-text)';
+            enableOptionButtons(false);
+        } else {
+            resetPauseButtonUI();
+            msg.innerText = '';
+            lastTimerTick = Date.now();
+            enableOptionButtons(true);
+        }
+    }
+
+    function resetPauseButtonUI() {
+        const btn = document.getElementById('btn-pause-quiz');
+        if (btn) {
+            btn.innerText = '⏸️ 일시정지';
+            btn.style.background = 'var(--warning)';
+            btn.style.color = '#2d3436';
+        }
+    }
+
+    function enableOptionButtons(enable) {
+        document.querySelectorAll('.btn-option').forEach(b => b.disabled = !enable);
+    }
+
+    function stopQuiz() {
+        if (confirm('현재 진행 중인 퀴즈를 중단하고 메인으로 돌아가시겠습니까?')) {
+            clearInterval(timer);
+            resetQuizToIntro();
+        }
+    }
+
+    function handleTimeOut() {
+        isAnswering = true;
+        const currentData = quizWordList[currentIdx];
+        const correctAnswer = (selectedQuizMode === 'engToKor') ? currentData.answer : currentData.word;
+
+        wrongWordsList.push(currentData);
+
+        const msg = document.getElementById('feedback-msg');
+        msg.innerText = `⏰ 시간 초과! 정답: [ ${correctAnswer} ]`;
+        msg.style.color = 'var(--danger)';
+        
+        if (isQuizAudioEnabled) speakText(currentData.word, 'en-US');
+        setTimeout(nextQuestion, 1200);
+    }
+
+    function checkAnswer(selected, correctAnswer) {
+        if (isAnswering || isPaused) return;
+        isAnswering = true;
+        clearInterval(timer);
+
+        const currentData = quizWordList[currentIdx];
+        const msg = document.getElementById('feedback-msg');
+
+        if (selected === correctAnswer) {
+            correctCount++;
+            msg.innerText = '⭕ 정답입니다!';
+            msg.style.color = 'var(--success)';
+        } else {
+            wrongWordsList.push(currentData);
+            msg.innerText = `❌ 오답! 정답: [ ${correctAnswer} ]`;
+            msg.style.color = 'var(--danger)';
+        }
+
+        if (isQuizAudioEnabled) speakText(currentData.word, 'en-US');
+        setTimeout(nextQuestion, 1200);
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        showQuestion();
+    }
+
+    function endQuiz() {
+        clearInterval(timer);
+        document.getElementById('quiz-game').classList.add('hidden');
+        document.getElementById('quiz-result').classList.remove('hidden');
+        
+        if (wrongWordsList.length > 0) {
+            if (!allDaysData[WRONG_DAY_KEY]) allDaysData[WRONG_DAY_KEY] = [];
+            wrongWordsList.forEach(wrongItem => {
+                const exists = allDaysData[WRONG_DAY_KEY].some(item => item.word === wrongItem.word);
+                if (!exists) allDaysData[WRONG_DAY_KEY].push({ word: wrongItem.word, answer: wrongItem.answer });
+            });
+            saveData();
+            updateCombinedWordList();
+        }
+
+        document.getElementById('final-correct-count').innerText = `${correctCount} / ${quizWordList.length}개 정답`;
+        document.getElementById('wrong-count-text').innerText = `틀린 문제: ${wrongWordsList.length}개`;
+        document.getElementById('btn-review-wrong').style.display = wrongWordsList.length > 0 ? 'inline-block' : 'none';
+    }
+
+    function resetQuizToIntro() {
+        clearInterval(timer);
+        document.getElementById('quiz-game').classList.add('hidden');
+        document.getElementById('quiz-result').classList.add('hidden');
+        document.getElementById('quiz-intro').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
